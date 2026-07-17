@@ -1,0 +1,7 @@
+TradeCheck 1.2.0
+Compilazione verificata con OpenJDK 21 mediante javac --release 21.
+Self-test commissioni superato per:
+- Fineco: minimo, percentuale e massimo;
+- IBKR USA Fixed: minimo, costo per azione e massimo 1% del controvalore;
+- caricamento dei cinque profili predefiniti;
+- migrazione preferenze dalla versione 1.1.0.
