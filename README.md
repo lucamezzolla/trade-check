@@ -19,9 +19,9 @@ Desktop application built with **Java Swing**
 
 ## Version
 
-1.2.0
+1.2.1
 
-## What's new in version 1.2.0
+## What's new in version 1.2.1
 
 - Automatic commission engine applied separately to purchases and sales.
 - Five predefined profiles:
@@ -41,9 +41,16 @@ Desktop application built with **Java Swing**
   - fixed amount;
   - amount per share;
   - percentage of the trade value.
-- In **Trade** mode, commissions are calculated automatically. You can still enter the actual commission charged by the broker, which takes precedence over the estimate.
+- In **Trade** mode, commissions are calculated automatically.
+- The purchase commission can now be derived from the executed purchase price, the broker average price and the quantity:
+  - `purchase commission = (average price - executed purchase price) × quantity`;
+  - the calculated field is read-only and displayed with a light-grey background.
+- The actual selling commission can still be entered manually and takes precedence over the profile estimate.
+- If the broker average price is not provided, TradeCheck automatically falls back to the purchase commission estimated from the selected profile.
 - The break-even price now accounts for the variable selling commission and is calculated numerically.
 - The panel currency is automatically aligned with the selected profile.
+- The **Trade** label is used consistently in every supported language.
+- The **Options** window has been enlarged and the form width has been improved to avoid horizontal scrolling.
 - Automatic migration of profiles from version 1.1.0.
 
 ## Predefined profiles
@@ -56,7 +63,9 @@ The initial values are based on the publicly available pricing schedules consult
 - IBKR USA Tiered: 0.0035 USD per share, minimum 0.35 USD, maximum 1% of the trade value, first monthly volume tier.
 - IBKR USA Fixed: 0.005 USD per share, minimum 1 USD, maximum 1% of the trade value.
 
-The IBKR USA Tiered profile also includes the known regulatory and clearing costs configured in the profile. Tiered commissions may still vary depending on the execution venue, routing and liquidity; TradeCheck reports this in the result. When the order has already been executed, entering the actual commission makes the calculation consistent with the broker's data.
+The IBKR USA Tiered profile also includes the known regulatory and clearing costs configured in the profile. Tiered commissions may still vary depending on the execution venue, routing and liquidity; TradeCheck reports this in the result. When the order has already been executed, entering the actual selling commission makes the calculation consistent with the broker's data.
+
+For the purchase side, when both the executed purchase price and the broker average price are available, TradeCheck derives the purchase commission directly from those values. This is useful when the broker average price already includes purchase commissions and fees.
 
 Official sources:
 
@@ -82,7 +91,7 @@ mvn clean package
 ## Run
 
 ```bash
-java -jar target/tradecheck-1.2.0.jar
+java -jar target/tradecheck-1.2.1.jar
 ```
 
 On macOS, you can also run:
@@ -97,7 +106,7 @@ chmod +x run-macos.command
 - `CommissionCalculator`: calculates base commissions, minimums, maximums and additional costs.
 - `BreakEvenCalculator`: calculates the break-even price with a variable selling commission.
 - `PurchasePreviewPanel`: pre-trade assessment with commissions calculated for the purchase price, stop and target.
-- `CompletedTradePanel`: break-even calculation and three selling scenarios, with actual commission overrides.
+- `CompletedTradePanel`: break-even calculation and three selling scenarios, with purchase commission derived from the broker average price and an optional actual selling commission override.
 - `SettingsService`: profile storage and migration through Java Preferences.
 - `OptionsDialog`: complete profile editing.
 - `I18n`: English, Italian, Spanish, French and Portuguese.

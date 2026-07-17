@@ -5,7 +5,7 @@
 
     <groupId>it.lucamezzolla</groupId>
     <artifactId>tradecheck</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
     <name>TradeCheck</name>
     <description>Applicazione desktop Java Swing per la valutazione pre-ordine e il calcolo del pareggio.</description>
 
@@ -15,7 +15,7 @@
     </properties>
 
     <build>
-        <finalName>tradecheck-1.2.0</finalName>
+        <finalName>tradecheck-1.2.1</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -33,7 +33,7 @@
                         </manifest>
                         <manifestEntries>
                             <Implementation-Title>TradeCheck</Implementation-Title>
-                            <Implementation-Version>1.2.0</Implementation-Version>
+                            <Implementation-Version>1.2.1</Implementation-Version>
                         </manifestEntries>
                     </archive>
                 </configuration>
