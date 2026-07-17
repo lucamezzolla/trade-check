@@ -87,15 +87,48 @@ public final class CompletedTradePanel extends JPanel {
         note.setFont(UIManager.getFont("Label.font"));
         note.setRows(4);
 
-        JPanel panel = new JPanel(new BorderLayout());
+        JButton showExample = new JButton(
+                "<html><u>" + I18n.text("trade.showExample") + "</u></html>"
+        );
+        showExample.setBorder(BorderFactory.createEmptyBorder());
+        showExample.setBorderPainted(false);
+        showExample.setContentAreaFilled(false);
+        showExample.setFocusPainted(false);
+        showExample.setOpaque(false);
+        showExample.setForeground(new Color(0, 102, 204));
+        showExample.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        showExample.setHorizontalAlignment(SwingConstants.LEFT);
+        showExample.setToolTipText(I18n.text("trade.showExample.tooltip"));
+        showExample.addActionListener(e -> populateExample());
+
+        JPanel exampleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        exampleRow.setOpaque(false);
+        exampleRow.add(showExample);
+
+        JPanel panel = new JPanel(new BorderLayout(0, 4));
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createTitledBorder(I18n.text("trade.positionModel.title")),
                 BorderFactory.createEmptyBorder(4, 8, 6, 8)
         ));
         panel.add(note, BorderLayout.CENTER);
+        panel.add(exampleRow, BorderLayout.SOUTH);
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 125));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
         return panel;
+    }
+
+    private void populateExample() {
+        activeProfile = settingsService.loadActiveProfile();
+        currency.setSelectedItem(activeProfile.currency());
+        averagePurchasePrice.setText("100");
+        quantity.setText("10");
+        sellCommissionOverride.setText("");
+        expectedSellPrices[0].setText("98");
+        expectedSellPrices[1].setText("105");
+        expectedSellPrices[2].setText("115");
+        dividends.setText("0");
+        result.setText("");
+        averagePurchasePrice.requestFocusInWindow();
     }
 
     public void applyProfile(BrokerProfile profile) {

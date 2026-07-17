@@ -11,8 +11,8 @@
 
 ### Main application
 
-![TradeCheck main window](docs/images/main-window.png)
-
+![TradeCheck main window](docs/images/main-window-1.png)
+![TradeCheck main window](docs/images/main-window-2.png)
 ---
 
 Desktop application built with **Java Swing**
@@ -52,6 +52,8 @@ Desktop application built with **Java Swing**
 - The **Trade** label is used consistently in every supported language.
 - The **Options** window has been enlarged and the form width has been improved to avoid horizontal scrolling.
 - The aggregate-position instructions are displayed directly in the application in every supported language.
+- A blue, underlined **Show example** link fills the Trade form with demonstration values for the current platform currency.
+- Platform-specific launchers are included for Linux, macOS and Windows.
 - Automatic migration of profiles from version 1.1.0.
 
 ## Aggregate position model
@@ -83,6 +85,8 @@ For each selling scenario, TradeCheck calculates or accepts the selling commissi
 - break-even selling price.
 
 > Do not enter the execution price of the latest purchase when it differs from the average price of the complete position. Use the broker average price for all shares currently held.
+
+At the end of the **Aggregate position** information box, click the blue, underlined **Show example** link to populate the Trade form automatically with demonstration values. The example uses the currency of the currently selected platform profile and fills in an average price, total quantity and three selling scenarios. You can edit every populated input before calculating.
 
 ## Predefined profiles
 
@@ -121,15 +125,34 @@ mvn clean package
 
 ## Run
 
+You can always start the packaged application directly:
+
 ```bash
 java -jar target/tradecheck-1.2.1.jar
 ```
 
-On macOS, you can also run:
+TradeCheck includes three platform-specific launcher files for Linux, macOS and Windows. The Linux and Windows launchers run `mvn clean package`, locate the generated TradeCheck JAR and start it automatically. The existing macOS launcher builds and starts version 1.2.1. Java 21 and Maven must be installed and available in `PATH`.
+
+### Linux
+
+```bash
+chmod +x run-linux.sh
+./run-linux.sh
+```
+
+### macOS
 
 ```bash
 chmod +x run-macos.command
 ./run-macos.command
+```
+
+### Windows
+
+Double-click `run-windows.bat`, or run it from Command Prompt or PowerShell:
+
+```bat
+run-windows.bat
 ```
 
 ## Main structure
