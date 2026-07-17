@@ -12,9 +12,8 @@ public final class BreakEvenCalculator {
 
     public double calculate(
             BrokerProfile profile,
-            double executionPrice,
+            double averagePurchasePrice,
             int quantity,
-            double effectiveBuyCommission,
             Double sellCommissionOverride,
             double dividends
     ) {
@@ -22,13 +21,13 @@ public final class BreakEvenCalculator {
             return 0.0;
         }
 
-        double purchaseCost = executionPrice * quantity + effectiveBuyCommission;
+        double purchaseCost = averagePurchasePrice * quantity;
         if (sellCommissionOverride != null) {
             return Math.max(0.0, (purchaseCost + sellCommissionOverride - dividends) / quantity);
         }
 
         double low = 0.0;
-        double high = Math.max(1.0, executionPrice * 2.0);
+        double high = Math.max(1.0, averagePurchasePrice * 2.0);
         while (netBeforeTax(profile, high, quantity, purchaseCost, dividends) < 0 && high < 1_000_000_000.0) {
             high *= 2.0;
         }
