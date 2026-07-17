@@ -10,14 +10,19 @@ import it.lucamezzolla.tradecheck.service.CommissionCalculator;
 import it.lucamezzolla.tradecheck.service.SettingsService;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 
 @SuppressWarnings("serial")
 public final class CompletedTradePanel extends JPanel {
+    private static final double ROUNDING_TOLERANCE = 0.0000001;
+
     private final JComboBox<TradeCurrency> currency = new JComboBox<>(TradeCurrency.values());
     private final JTextField executionPrice = new JTextField();
+    private final JTextField averagePurchasePrice = new JTextField();
     private final JTextField quantity = new JTextField();
-    private final JTextField buyCommissionOverride = new JTextField();
+    private final JTextField calculatedBuyCommission = new JTextField();
     private final JTextField sellCommissionOverride = new JTextField();
     private final JTextField[] expectedSellPrices = {
             new JTextField(),
@@ -38,15 +43,21 @@ public final class CompletedTradePanel extends JPanel {
         setLayout(new BorderLayout(12, 12));
         setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
 
+        calculatedBuyCommission.setEditable(false);
+        calculatedBuyCommission.setBackground(new Color(238, 238, 238));
+        calculatedBuyCommission.setHorizontalAlignment(SwingConstants.RIGHT);
+
         JPanel form = new JPanel();
         form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
         form.add(UiSupport.row(I18n.text("field.currency"), currency));
         form.add(UiSupport.row(I18n.text("field.executionPrice"), I18n.text("field.executionPrice.tooltip"), executionPrice));
+        form.add(UiSupport.row(I18n.text("field.averagePurchasePrice"),
+                I18n.text("field.averagePurchasePrice.tooltip"), averagePurchasePrice));
         form.add(UiSupport.row(I18n.text("field.quantity"), quantity));
-        form.add(UiSupport.row(I18n.text("field.buyCommissionOverride"),
-                I18n.text("field.commissionOverride.tooltip"), buyCommissionOverride));
+        form.add(UiSupport.row(I18n.text("field.buyCommissionCalculated"),
+                I18n.text("field.buyCommissionCalculated.tooltip"), calculatedBuyCommission));
         form.add(UiSupport.row(I18n.text("field.sellCommissionOverride"),
-                I18n.text("field.commissionOverride.tooltip"), sellCommissionOverride));
+                I18n.text("field.sellCommissionOverride.tooltip"), sellCommissionOverride));
         form.add(UiSupport.row(I18n.text("field.expectedSellPrice1"), expectedSellPrices[0]));
         form.add(UiSupport.row(I18n.text("field.expectedSellPrice2"), expectedSellPrices[1]));
         form.add(UiSupport.row(I18n.text("field.expectedSellPrice3"), expectedSellPrices[2]));
@@ -74,22 +85,25 @@ public final class CompletedTradePanel extends JPanel {
         add(left, BorderLayout.CENTER);
         add(new JScrollPane(result), BorderLayout.EAST);
 
+        installBuyCommissionAutoCalculation();
         applyProfile(activeProfile);
     }
 
     public void applyProfile(BrokerProfile profile) {
         this.activeProfile = profile;
         currency.setSelectedItem(profile.currency());
-        buyCommissionOverride.setText("");
+        averagePurchasePrice.setText("");
+        calculatedBuyCommission.setText("");
         sellCommissionOverride.setText("");
         result.setText("");
+        updateCalculatedBuyCommission();
     }
 
     private void calculate() {
         try {
             double execution = UiSupport.number(executionPrice);
+            Double brokerAveragePrice = UiSupport.optionalNumber(averagePurchasePrice);
             int q = UiSupport.integer(quantity);
-            Double buyOverride = UiSupport.optionalNumber(buyCommissionOverride);
             Double sellOverride = UiSupport.optionalNumber(sellCommissionOverride);
             double dividendValue = UiSupport.number(dividends);
             TradeCurrency selectedCurrency = (TradeCurrency) currency.getSelectedItem();
@@ -106,17 +120,27 @@ public final class CompletedTradePanel extends JPanel {
             activeProfile = settingsService.loadActiveProfile();
             validateCurrency(selectedCurrency);
             if (execution <= 0 || q <= 0 || dividendValue < 0 || scenarioCount == 0
-                    || (buyOverride != null && buyOverride < 0)
+                    || (brokerAveragePrice != null && brokerAveragePrice <= 0)
                     || (sellOverride != null && sellOverride < 0)) {
                 throw new NumberFormatException();
+            }
+            if (brokerAveragePrice != null && brokerAveragePrice + ROUNDING_TOLERANCE < execution) {
+                throw new AveragePriceBelowExecutionException();
             }
 
             CommissionBreakdown calculatedBuy = commissionCalculator
                     .calculate(activeProfile, execution, q, TradeSide.BUY);
-            double effectiveBuyFee = buyOverride != null ? buyOverride : calculatedBuy.total();
+            boolean buyCommissionFromAveragePrice = brokerAveragePrice != null;
+            double effectiveBuyFee = buyCommissionFromAveragePrice
+                    ? Math.max(0.0, (brokerAveragePrice - execution) * q)
+                    : calculatedBuy.total();
             double purchaseValue = execution * q;
-            double totalPurchaseCost = purchaseValue + effectiveBuyFee;
-            double averagePrice = totalPurchaseCost / q;
+            double totalPurchaseCost = buyCommissionFromAveragePrice
+                    ? brokerAveragePrice * q
+                    : purchaseValue + effectiveBuyFee;
+            double effectiveAveragePrice = buyCommissionFromAveragePrice
+                    ? brokerAveragePrice
+                    : totalPurchaseCost / q;
             double breakEven = breakEvenCalculator.calculate(
                     activeProfile,
                     execution,
@@ -132,10 +156,10 @@ public final class CompletedTradePanel extends JPanel {
             appendAccuracy(out, activeProfile);
             out.append("\n");
             out.append(I18n.text("result.purchaseValue")).append(": ").append(UiSupport.money(purchaseValue, selectedCurrency)).append("\n");
-            appendEffectiveCommission(out, I18n.text("result.buyCommission"), calculatedBuy,
-                    buyOverride, selectedCurrency);
+            appendBuyCommission(out, calculatedBuy, effectiveBuyFee,
+                    buyCommissionFromAveragePrice, selectedCurrency);
             out.append(I18n.text("result.totalPurchaseCost")).append(": ").append(UiSupport.money(totalPurchaseCost, selectedCurrency)).append("\n");
-            out.append(I18n.text("result.averagePrice")).append(": ").append(UiSupport.price(averagePrice, selectedCurrency)).append("\n");
+            out.append(I18n.text("result.averagePrice")).append(": ").append(UiSupport.price(effectiveAveragePrice, selectedCurrency)).append("\n");
             out.append(I18n.text("result.breakEven")).append(": ").append(UiSupport.price(breakEven, selectedCurrency)).append("\n");
 
             int visibleScenario = 0;
@@ -155,6 +179,9 @@ public final class CompletedTradePanel extends JPanel {
             result.setCaretPosition(0);
         } catch (CurrencyMismatchException ex) {
             JOptionPane.showMessageDialog(this, I18n.text("error.currencyMismatch"),
+                    I18n.text("error.title"), JOptionPane.ERROR_MESSAGE);
+        } catch (AveragePriceBelowExecutionException ex) {
+            JOptionPane.showMessageDialog(this, I18n.text("error.averagePriceBelowExecution"),
                     I18n.text("error.title"), JOptionPane.ERROR_MESSAGE);
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, I18n.text("error.invalidNumber"),
@@ -199,6 +226,27 @@ public final class CompletedTradePanel extends JPanel {
         out.append(I18n.text("result.netProfit")).append(": ").append(UiSupport.money(netProfit, currency)).append("\n");
     }
 
+    private void appendBuyCommission(
+            StringBuilder out,
+            CommissionBreakdown calculated,
+            double effective,
+            boolean fromAveragePrice,
+            TradeCurrency currency
+    ) {
+        out.append(I18n.text("result.buyCommission")).append(": ")
+                .append(UiSupport.money(effective, currency))
+                .append(" [").append(I18n.text(fromAveragePrice
+                        ? "result.commissionSource.averagePrice"
+                        : "result.commissionSource.calculated")).append("]");
+        if (!fromAveragePrice && calculated.knownExternalFees() > 0) {
+            out.append(" (").append(I18n.text("result.brokerCommission")).append(" ")
+                    .append(UiSupport.money(calculated.brokerCommission(), currency))
+                    .append(" + ").append(I18n.text("result.knownExternalFees")).append(" ")
+                    .append(UiSupport.money(calculated.knownExternalFees(), currency)).append(")");
+        }
+        out.append("\n");
+    }
+
     private void appendEffectiveCommission(
             StringBuilder out,
             String label,
@@ -234,10 +282,71 @@ public final class CompletedTradePanel extends JPanel {
         }
     }
 
+    private void installBuyCommissionAutoCalculation() {
+        DocumentListener listener = new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateCalculatedBuyCommission();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateCalculatedBuyCommission();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateCalculatedBuyCommission();
+            }
+        };
+        executionPrice.getDocument().addDocumentListener(listener);
+        averagePurchasePrice.getDocument().addDocumentListener(listener);
+        quantity.getDocument().addDocumentListener(listener);
+        currency.addActionListener(e -> updateCalculatedBuyCommission());
+    }
+
+    private void updateCalculatedBuyCommission() {
+        try {
+            double execution = UiSupport.number(executionPrice);
+            int q = UiSupport.integer(quantity);
+            if (execution <= 0 || q <= 0 || activeProfile == null) {
+                clearCalculatedBuyCommission();
+                return;
+            }
+
+            Double brokerAveragePrice = UiSupport.optionalNumber(averagePurchasePrice);
+            double buyFee;
+            String sourceTooltip;
+            if (brokerAveragePrice != null) {
+                if (brokerAveragePrice <= 0 || brokerAveragePrice + ROUNDING_TOLERANCE < execution) {
+                    clearCalculatedBuyCommission();
+                    return;
+                }
+                buyFee = Math.max(0.0, (brokerAveragePrice - execution) * q);
+                sourceTooltip = I18n.text("result.commissionSource.averagePrice");
+            } else {
+                buyFee = commissionCalculator.calculate(activeProfile, execution, q, TradeSide.BUY).total();
+                sourceTooltip = I18n.text("result.commissionSource.calculated");
+            }
+
+            calculatedBuyCommission.setText(UiSupport.decimal(buyFee, 4));
+            calculatedBuyCommission.setToolTipText(
+                    I18n.text("field.buyCommissionCalculated.tooltip") + " — " + sourceTooltip);
+        } catch (NumberFormatException ex) {
+            clearCalculatedBuyCommission();
+        }
+    }
+
+    private void clearCalculatedBuyCommission() {
+        calculatedBuyCommission.setText("");
+        calculatedBuyCommission.setToolTipText(I18n.text("field.buyCommissionCalculated.tooltip"));
+    }
+
     private void clear() {
         executionPrice.setText("");
+        averagePurchasePrice.setText("");
         quantity.setText("");
-        buyCommissionOverride.setText("");
+        calculatedBuyCommission.setText("");
         sellCommissionOverride.setText("");
         for (JTextField expectedSellPrice : expectedSellPrices) {
             expectedSellPrice.setText("");
@@ -247,5 +356,8 @@ public final class CompletedTradePanel extends JPanel {
     }
 
     private static final class CurrencyMismatchException extends RuntimeException {
+    }
+
+    private static final class AveragePriceBelowExecutionException extends RuntimeException {
     }
 }
