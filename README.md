@@ -15,89 +15,89 @@
 
 ---
 
-Applicazione desktop **Java Swing**
+Desktop application built with **Java Swing**
 
-## Versione
+## Version
 
 1.2.0
 
-## Novità della versione 1.2.0
+## What's new in version 1.2.0
 
-- Motore commissionale automatico applicato separatamente ad acquisto e vendita.
-- Cinque profili predefiniti:
-  - **Fineco Italia — Conto Trading**;
-  - **IBKR Europa — Tiered**;
-  - **IBKR Europa — Fixed SmartRouting**;
+- Automatic commission engine applied separately to purchases and sales.
+- Five predefined profiles:
+  - **Fineco Italy — Trading Account**;
+  - **IBKR Europe — Tiered**;
+  - **IBKR Europe — Fixed SmartRouting**;
   - **IBKR USA — Tiered**;
   - **IBKR USA — Fixed**.
-- Supporto a due metodi di calcolo:
-  - percentuale sul controvalore;
-  - costo per azione.
-- Supporto a minimo per ordine e tre tipi di massimo:
-  - nessun massimo;
-  - importo fisso;
-  - percentuale del controvalore.
-- Costi aggiuntivi configurabili, separati tra acquisto e vendita:
-  - importo fisso;
-  - importo per azione;
-  - percentuale sul controvalore.
-- In **Trade effettuato** le commissioni vengono calcolate automaticamente. È comunque possibile inserire la commissione reale applicata dal broker, che prevale sulla stima.
-- Il prezzo di pareggio ora tiene conto della commissione di vendita variabile e viene calcolato numericamente.
-- La valuta del pannello viene allineata automaticamente al profilo selezionato.
-- Migrazione automatica dei profili della versione 1.1.0.
+- Support for two calculation methods:
+  - percentage of the trade value;
+  - cost per share.
+- Support for a minimum commission per order and three maximum commission types:
+  - no maximum;
+  - fixed amount;
+  - percentage of the trade value.
+- Configurable additional costs, separated between purchases and sales:
+  - fixed amount;
+  - amount per share;
+  - percentage of the trade value.
+- In **Trade** mode, commissions are calculated automatically. You can still enter the actual commission charged by the broker, which takes precedence over the estimate.
+- The break-even price now accounts for the variable selling commission and is calculated numerically.
+- The panel currency is automatically aligned with the selected profile.
+- Automatic migration of profiles from version 1.1.0.
 
-## Profili predefiniti
+## Predefined profiles
 
-I valori iniziali sono basati sui tariffari pubblici consultati il 17 luglio 2026:
+The initial values are based on the publicly available pricing schedules consulted on July 17, 2026:
 
-- Fineco Conto Trading Italia: 0,19% del controvalore, minimo 2,95 EUR, massimo 19 EUR.
-- IBKR Europa Tiered: 0,05% del controvalore, minimo 1,25 EUR, massimo 29 EUR, primo scaglione mensile.
-- IBKR Europa Fixed SmartRouting: 0,05% del controvalore, minimo 3 EUR, nessun massimo indicato.
-- IBKR USA Tiered: 0,0035 USD per azione, minimo 0,35 USD, massimo 1% del controvalore, primo scaglione mensile.
-- IBKR USA Fixed: 0,005 USD per azione, minimo 1 USD, massimo 1% del controvalore.
+- Fineco Italy Trading Account: 0.19% of the trade value, minimum 2.95 EUR, maximum 19 EUR.
+- IBKR Europe Tiered: 0.05% of the trade value, minimum 1.25 EUR, maximum 29 EUR, first monthly volume tier.
+- IBKR Europe Fixed SmartRouting: 0.05% of the trade value, minimum 3 EUR, no stated maximum.
+- IBKR USA Tiered: 0.0035 USD per share, minimum 0.35 USD, maximum 1% of the trade value, first monthly volume tier.
+- IBKR USA Fixed: 0.005 USD per share, minimum 1 USD, maximum 1% of the trade value.
 
-Per IBKR USA Tiered sono inclusi anche i costi regolamentari e di clearing noti configurati nel profilo. Le commissioni Tiered possono comunque variare in base alla sede di esecuzione, all'instradamento e alla liquidità: TradeCheck lo segnala nel risultato. Quando l'ordine è già stato eseguito, inserire la commissione effettiva rende il calcolo aderente al dato del broker.
+The IBKR USA Tiered profile also includes the known regulatory and clearing costs configured in the profile. Tiered commissions may still vary depending on the execution venue, routing and liquidity; TradeCheck reports this in the result. When the order has already been executed, entering the actual commission makes the calculation consistent with the broker's data.
 
-Fonti ufficiali:
+Official sources:
 
 - https://it.finecobank.com/trading/conto-trading/
 - https://www.interactivebrokers.com/en/pricing/commissions-stocks-europe.php
 - https://www.interactivebrokers.com/en/pricing/commissions-stocks.php
 
-> I tariffari possono cambiare. I profili sono modificabili dalla finestra **Opzioni**.
+> Pricing schedules may change. Profiles can be edited from the **Options** window.
 
-La valuta selezionata determina il simbolo e la formattazione dei risultati. TradeCheck non esegue conversioni automatiche tra euro e dollari. La stima fiscale in USD non sostituisce il calcolo fiscale in EUR con i cambi ufficiali.
+The selected currency determines the symbol and formatting used in the results. TradeCheck does not perform automatic conversions between euros and US dollars. A tax estimate in USD does not replace the tax calculation in EUR using official exchange rates.
 
-## Requisiti
+## Requirements
 
 - Java 21
 - Maven
 
-## Compilazione
+## Build
 
 ```bash
 mvn clean package
 ```
 
-## Avvio
+## Run
 
 ```bash
 java -jar target/tradecheck-1.2.0.jar
 ```
 
-Su macOS puoi anche eseguire:
+On macOS, you can also run:
 
 ```bash
 chmod +x run-macos.command
 ./run-macos.command
 ```
 
-## Struttura principale
+## Main structure
 
-- `CommissionCalculator`: calcolo commissione base, minimi, massimi e costi aggiuntivi.
-- `BreakEvenCalculator`: pareggio con commissione di vendita variabile.
-- `PurchasePreviewPanel`: valutazione preventiva con commissioni calcolate sul prezzo di acquisto, stop e target.
-- `CompletedTradePanel`: pareggio e tre scenari di vendita, con override delle commissioni reali.
-- `SettingsService`: profili e migrazione tramite Java Preferences.
-- `OptionsDialog`: modifica completa dei profili.
-- `I18n`: inglese, italiano, spagnolo, francese e portoghese.
+- `CommissionCalculator`: calculates base commissions, minimums, maximums and additional costs.
+- `BreakEvenCalculator`: calculates the break-even price with a variable selling commission.
+- `PurchasePreviewPanel`: pre-trade assessment with commissions calculated for the purchase price, stop and target.
+- `CompletedTradePanel`: break-even calculation and three selling scenarios, with actual commission overrides.
+- `SettingsService`: profile storage and migration through Java Preferences.
+- `OptionsDialog`: complete profile editing.
+- `I18n`: English, Italian, Spanish, French and Portuguese.
